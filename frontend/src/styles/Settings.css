@@ -1,0 +1,75 @@
+
+
+/* Hero */
+.settings-hero {
+  background: #eaf7ff;
+  text-align: center;
+  padding: 40px 20px;
+}
+.settings-hero h1 {
+  font-size: 30px;
+  color: #005a99;
+  margin-bottom: 10px;
+}
+
+/* Tabs */
+.settings-container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+.tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background: #d4ecff;
+  margin: 0 10px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+.tab-btn.active,
+.tab-btn:hover {
+  background: #b5ddff;
+  color: #004d80;
+}
+.tab-content {
+  display: none;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.tab-content.active {
+  display: block;
+}
+
+/* Form styles */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+input, select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+.save-btn {
+  margin-top: 10px;
+  background: #007acc;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.save-btn:hover {
+  background: #005c99;
+}

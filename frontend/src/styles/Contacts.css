@@ -1,0 +1,115 @@
+
+
+/* Hero */
+.hero {
+  background: #e6f4ff;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 32px;
+  color: #005a99;
+  margin-bottom: 10px;
+}
+
+/* Contact Section */
+.contact-section {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 40px 20px;
+  gap: 40px;
+  max-width: 1100px;
+  margin: auto;
+}
+
+.contact-form,
+.contact-info {
+  flex: 1;
+  min-width: 300px;
+}
+
+.contact-form h2,
+.contact-info h2 {
+  color: #004d80;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.submit-btn {
+  padding: 12px 24px;
+  background-color: #0099cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.contact-info img {
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 8px;
+}
+
+/* Accordion FAQ */
+.faq {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 50px 20px;
+}
+
+.faq h2 {
+  text-align: center;
+  color: #005a99;
+  margin-bottom: 30px;
+}
+
+.accordion-btn {
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.accordion-btn:hover {
+  background: #d4f0ff;
+}
+
+.accordion-content {
+  padding: 15px;
+  background: rgba(240, 250, 255, 0.9);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.contact-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #cfe9ff, #a8d8ff, #7cc7ff);
+}
+
+.contact-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 20px;
+}
+
