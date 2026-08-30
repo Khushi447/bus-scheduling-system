@@ -3,7 +3,9 @@ import Footer from "../components/Footer";
 import { useState, useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import "../styles/Signup.css";
+
+const inputClassName =
+  "mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
 
 function Signup() {
   const [accordionOpen, setAccordionOpen] = useState(false);
@@ -39,114 +41,152 @@ function Signup() {
   };
 
   return (
+    <>
+      <Navbar />
 
-      <>
-    <Navbar />
-
-      <section className="signup-section" data-aos="fade-up">
-        <h1>👤 Create Your Account</h1>
-        <p>Join our system to manage your duties and schedules efficiently.</p>
-
-        <form className="signup-form" onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label>Full Name</label>
-            <input
-              type="text"
-              name="name"
-              placeholder="Your full name"
-              onChange={handleChange}
-              required
-            />
+      <main className="min-h-screen bg-slate-100 px-4 pb-10 pt-28 sm:px-6 lg:px-8">
+        <section
+          className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/70 sm:p-8"
+          data-aos="fade-up"
+        >
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-sky-700">
+              👤 Create Your Account
+            </h1>
+            <p className="mt-3 text-sm text-slate-600 sm:text-base">
+              Join our system to manage your duties and schedules efficiently.
+            </p>
           </div>
 
-          <div className="input-group">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="you@example.com"
-              onChange={handleChange}
-              required
-            />
-          </div>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700">
+                Full Name
+              </label>
+              <input
+                className={inputClassName}
+                type="text"
+                name="name"
+                placeholder="Your full name"
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-          <div className="input-group">
-            <label>Phone Number</label>
-            <input
-              type="tel"
-              name="phone"
-              placeholder="+91 98765 43210"
-              onChange={handleChange}
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700">
+                Email
+              </label>
+              <input
+                className={inputClassName}
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-          <div className="input-group">
-            <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Create password"
-              onChange={handleChange}
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700">
+                Phone Number
+              </label>
+              <input
+                className={inputClassName}
+                type="tel"
+                name="phone"
+                placeholder="+91 98765 43210"
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-          <div className="input-group">
-            <label>Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm password"
-              onChange={handleChange}
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700">
+                Password
+              </label>
+              <input
+                className={inputClassName}
+                type="password"
+                name="password"
+                placeholder="Create password"
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-          {/* ACCORDION */}
-          <div className="accordion">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700">
+                Confirm Password
+              </label>
+              <input
+                className={inputClassName}
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm password"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-sky-200 bg-sky-50/60">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-sky-800 transition hover:bg-sky-100"
+                onClick={() => setAccordionOpen(!accordionOpen)}
+              >
+                <span className="flex items-center gap-2">ℹ️ Additional Info</span>
+                <span className="text-lg leading-none">
+                  {accordionOpen ? "−" : "+"}
+                </span>
+              </button>
+
+              {accordionOpen && (
+                <div className="space-y-4 border-t border-sky-200 bg-sky-50/80 p-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Role
+                    </label>
+                    <select
+                      className={`${inputClassName} appearance-none`}
+                      name="role"
+                      onChange={handleChange}
+                      value={formData.role}
+                    >
+                      <option>Driver</option>
+                      <option>Conductor</option>
+                      <option>Scheduler</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Depot
+                    </label>
+                    <input
+                      className={inputClassName}
+                      type="text"
+                      name="depot"
+                      placeholder="Depot name or ID"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
-              type="button"
-              className="accordion-btn"
-              onClick={() => setAccordionOpen(!accordionOpen)}
+              type="submit"
+              className="w-full rounded-xl bg-sky-600 px-4 py-3 text-base font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
             >
-              ℹ️ Additional Info
+              Sign Up
             </button>
-
-            {accordionOpen && (
-              <div className="accordion-panel">
-                <label>Role</label>
-                <select
-                  name="role"
-                  onChange={handleChange}
-                  value={formData.role}
-                >
-                  <option>Driver</option>
-                  <option>Conductor</option>
-                  <option>Scheduler</option>
-                </select>
-
-                <label>Depot</label>
-                <input
-                  type="text"
-                  name="depot"
-                  placeholder="Depot name or ID"
-                  onChange={handleChange}
-                />
-              </div>
-            )}
-          </div>
-
-          <button type="submit" className="signup-btn">
-            Sign Up
-          </button>
-        </form>
-      </section>
+          </form>
+        </section>
+      </main>
 
       <Footer />
-
-      </>
-
+    </>
   );
 }
 
