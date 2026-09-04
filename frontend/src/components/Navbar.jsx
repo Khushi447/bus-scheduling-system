@@ -5,6 +5,7 @@ function Navbar() {
   const profileRef = useRef(null);
 
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -52,8 +53,12 @@ function Navbar() {
           : "-top-[100px] opacity-0 -translate-y-[15px]"
       } ${isScrolled ? "bg-[#001a33]" : "bg-[#001f3f]"}`}
     >
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between px-8 py-4">
-        <div className="flex items-center gap-2 text-[1.7rem] font-bold text-[#00bcd4]">
+      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between px-4 py-3 sm:px-6 md:flex-nowrap md:px-8 md:py-4">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-[1.35rem] font-bold text-[#00bcd4] no-underline sm:text-[1.5rem] md:text-[1.7rem]"
+          onClick={() => setShowMobileMenu(false)}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-[28px] w-[28px] shrink-0"
@@ -73,14 +78,25 @@ function Navbar() {
           </svg>
 
           BusScheduler
-        </div>
+        </Link>
 
-        <nav className="flex items-center">
-          <ul className="list-none flex items-center gap-7">
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border-0 bg-transparent text-2xl text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#03a9f4] md:hidden"
+          aria-label={showMobileMenu ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={showMobileMenu}
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+        >
+          {showMobileMenu ? "×" : "☰"}
+        </button>
+
+        <nav className={`${showMobileMenu ? "flex" : "hidden"} basis-full items-center md:flex md:basis-auto`}>
+          <ul className="flex w-full flex-col items-stretch gap-1 pt-3 md:w-auto md:flex-row md:items-center md:gap-7 md:pt-0">
             <li>
               <Link
                 to="/"
-                className="rounded-md px-2.5 py-1.5 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4]"
+                className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                onClick={() => setShowMobileMenu(false)}
               >
                 Home
               </Link>
@@ -89,7 +105,8 @@ function Navbar() {
             <li>
               <Link
                 to="/Contacts"
-                className="rounded-md px-2.5 py-1.5 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4]"
+                className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                onClick={() => setShowMobileMenu(false)}
               >
                 Contacts
               </Link>
@@ -98,7 +115,8 @@ function Navbar() {
             <li>
               <Link
                 to="/Settings"
-                className="rounded-md px-2.5 py-1.5 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4]"
+                className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                onClick={() => setShowMobileMenu(false)}
               >
                 Settings
               </Link>
@@ -107,19 +125,23 @@ function Navbar() {
             <li>
               <Link
                 to="/Signup"
-                className="rounded-md px-2.5 py-1.5 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4]"
+                className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                onClick={() => setShowMobileMenu(false)}
               >
                 SignUp
               </Link>
             </li>
 
             <li className="relative flex items-center" ref={profileRef}>
-              <div
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-xl text-white"
+              <button
+                type="button"
+                aria-label="Open profile menu"
+                aria-expanded={showDropdown}
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white/10 text-xl text-white"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 👤
-              </div>
+              </button>
 
               {showDropdown && (
                 <div className="absolute right-0 top-10 z-[9999] min-w-[160px] rounded-md bg-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
