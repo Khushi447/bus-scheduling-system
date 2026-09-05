@@ -132,6 +132,16 @@ function Navbar() {
               </Link>
             </li>
 
+            <li>
+              <Link
+                to="/Login"
+                className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Login
+              </Link>
+            </li>
+
             <li className="relative flex items-center" ref={profileRef}>
               <button
                 type="button"
@@ -150,12 +160,6 @@ function Navbar() {
                     className="block px-[15px] py-[10px] text-sm text-[#004d80] no-underline hover:bg-[#e6f5ff]"
                   >
                     View Profile
-                  </Link>
-                  <Link
-                    to="/Settings"
-                    className="block px-[15px] py-[10px] text-sm text-[#004d80] no-underline hover:bg-[#e6f5ff]"
-                  >
-                    Settings
                   </Link>
                   <a
                     href="#"
