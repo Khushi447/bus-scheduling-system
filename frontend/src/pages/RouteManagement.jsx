@@ -1,36 +1,13 @@
 import Navbar from "../components/Navbar";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { apiFetch } from "../api";
 
 function RouteManagement() {
   const mapRef = useRef(null);
-
-  const loadMockRoutes = () => {
-    if (!mapRef.current) return;
-
-    const route1 = L.polyline(
-      [
-        [25.5941, 85.1376],
-        [25.6, 85.15],
-        [25.605, 85.16],
-      ],
-      { color: "blue" }
-    ).addTo(mapRef.current);
-
-    route1.bindPopup("Route A");
-
-    const route2 = L.polyline(
-      [
-        [25.5941, 85.1376],
-        [25.59, 85.12],
-        [25.585, 85.11],
-      ],
-      { color: "green" }
-    ).addTo(mapRef.current);
-
-    route2.bindPopup("Route B");
-  };
+  const [routes, setRoutes] = useState([]);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -43,7 +20,9 @@ function RouteManagement() {
         }
       ).addTo(mapRef.current);
 
-      loadMockRoutes();
+      apiFetch("/routes")
+        .then((response) => setRoutes(response.data))
+        .catch((requestError) => setStatus(requestError.message));
     }
 
     return () => {
@@ -54,11 +33,11 @@ function RouteManagement() {
     };
   }, []);
 
-  const startDrawing = () => alert("Draw mode activated");
-  const optimizeRoute = () => alert("Optimizing route...");
-  const openNewRouteForm = () => alert("Add new route...");
-  const showRouteList = () => alert("All routes...");
-  const showOptimizationHistory = () => alert("History...");
+  const startDrawing = () => setStatus("Route drawing requires map coordinates, which are not part of the backend route model yet.");
+  const optimizeRoute = () => setStatus("Route optimization is not available in the backend yet.");
+  const openNewRouteForm = () => setStatus("Create a route through POST /api/v1/routes or add a route form here.");
+  const showRouteList = () => setStatus(`${routes.length} route${routes.length === 1 ? "" : "s"} loaded.`);
+  const showOptimizationHistory = () => setStatus("No optimization history endpoint is available yet.");
 
   return (
     <div className="relative min-h-screen bg-slate-100">
@@ -87,6 +66,15 @@ function RouteManagement() {
               Optimization History
             </li>
           </ul>
+          <div className="mt-5 space-y-2 border-t border-sky-200 pt-4">
+            {routes.map((route) => (
+              <div key={route._id} className="rounded-md bg-white p-2 shadow-sm">
+                <p className="font-semibold">{route.code} - {route.name}</p>
+                <p className="text-xs text-slate-600">{route.origin} to {route.destination}</p>
+              </div>
+            ))}
+            {!routes.length && !status && <p className="text-xs text-slate-600">No routes found.</p>}
+          </div>
 
           <button
             type="button"
@@ -137,6 +125,7 @@ function RouteManagement() {
           >
             Draw New Route
           </button>
+            {status && <p className="absolute bottom-5 right-5 z-[1000] max-w-xs rounded-lg bg-white p-3 text-sm text-slate-700 shadow-lg">{status}</p>}
         </div>
       </div>
     </div>

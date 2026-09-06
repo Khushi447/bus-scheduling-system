@@ -3,6 +3,7 @@ import Footer from "../components/Footer";
 import { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { apiFetch } from "../api";
 
 const inputClassName =
   "mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition duration-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
@@ -13,10 +14,57 @@ const tabButtonClass =
 function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profile, setProfile] = useState({ name: "", phone: "", depot: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     AOS.init();
+
+    apiFetch("/users/me")
+      .then((response) => {
+        const user = response.data;
+        setProfile({
+          name: user.name || "",
+          phone: user.phone || "",
+          depot: user.depot || "",
+          email: user.email || "",
+        });
+      })
+      .catch((requestError) => setError(requestError.message));
   }, []);
+
+  const handleProfileChange = (event) => {
+    setProfile((currentProfile) => ({
+      ...currentProfile,
+      [event.target.name]: event.target.value,
+    }));
+  };
+
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setIsSaving(true);
+
+    try {
+      const response = await apiFetch("/users/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: profile.name,
+          phone: profile.phone,
+          depot: profile.depot,
+        }),
+      });
+      setProfile((currentProfile) => ({ ...currentProfile, ...response.data }));
+      setMessage("Profile updated successfully.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -131,12 +179,14 @@ function Settings() {
                   <h2 className="mb-5 text-2xl font-bold text-slate-800">
                     Profile Settings
                   </h2>
-                  <form className="space-y-4">
+                  <form className="space-y-4" onSubmit={handleProfileSubmit}>
+                    {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+                    {message && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
                         Full Name
                       </label>
-                      <input className={inputClassName} type="text" placeholder="John Doe" />
+                      <input className={inputClassName} type="text" name="name" value={profile.name} onChange={handleProfileChange} required />
                     </div>
 
                     <div>
@@ -146,7 +196,8 @@ function Settings() {
                       <input
                         className={inputClassName}
                         type="email"
-                        placeholder="john@example.com"
+                        value={profile.email || ""}
+                        readOnly
                       />
                     </div>
 
@@ -157,22 +208,25 @@ function Settings() {
                       <input
                         className={inputClassName}
                         type="tel"
-                        placeholder="+91 98765 43210"
+                        name="phone"
+                        value={profile.phone}
+                        onChange={handleProfileChange}
+                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Profile Picture
+                        Depot
                       </label>
-                      <input className="mt-2 block w-full text-sm text-slate-500 file:mr-4 file:rounded-xl file:border-0 file:bg-sky-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-sky-700 hover:file:bg-sky-200" type="file" />
+                      <input className={inputClassName} type="text" name="depot" value={profile.depot} onChange={handleProfileChange} placeholder="Depot name or ID" />
                     </div>
 
                     <button
                       type="submit"
                       className="mt-2 inline-flex rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
                     >
-                      Save Changes
+                      {isSaving ? "Saving..." : "Save Changes"}
                     </button>
                   </form>
                 </div>

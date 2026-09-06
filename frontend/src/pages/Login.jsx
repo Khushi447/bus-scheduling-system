@@ -4,6 +4,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { apiFetch, setAuthSession } from "../api";
 
 const inputClassName =
   "mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
@@ -13,6 +14,8 @@ function Login() {
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     AOS.init();
@@ -22,10 +25,23 @@ function Login() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login Data:", formData);
-    alert("Logged in successfully!");
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await apiFetch("/users/login", {
+        method: "POST",
+        body: JSON.stringify(formData),
+      });
+      setAuthSession(response.data);
+      window.location.href = "/";
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -47,6 +63,7 @@ function Login() {
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             <div>
               <label className="block text-sm font-semibold text-slate-700">
                 Email
@@ -81,7 +98,7 @@ function Login() {
               type="submit"
               className="w-full rounded-xl bg-sky-600 px-4 py-3 text-base font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
             >
-              Log In
+              {isSubmitting ? "Logging in..." : "Log In"}
             </button>
           </form>
 

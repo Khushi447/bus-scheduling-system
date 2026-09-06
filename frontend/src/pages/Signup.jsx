@@ -3,6 +3,7 @@ import Footer from "../components/Footer";
 import { useState, useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { apiFetch, setAuthSession } from "../api";
 
 const inputClassName =
   "mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
@@ -19,6 +20,8 @@ function Signup() {
     role: "Driver",
     depot: "",
   });
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     AOS.init();
@@ -28,16 +31,31 @@ function Signup() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match.");
       return;
     }
 
-    console.log("Signup Data:", formData);
-    alert("Account created successfully!");
+    setIsSubmitting(true);
+
+    try {
+      const registrationData = { ...formData };
+      delete registrationData.confirmPassword;
+      const response = await apiFetch("/users/register", {
+        method: "POST",
+        body: JSON.stringify(registrationData),
+      });
+      setAuthSession(response.data);
+      window.location.href = "/";
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -59,6 +77,7 @@ function Signup() {
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             <div>
               <label className="block text-sm font-semibold text-slate-700">
                 Full Name
@@ -179,7 +198,7 @@ function Signup() {
               type="submit"
               className="w-full rounded-xl bg-sky-600 px-4 py-3 text-base font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
             >
-              Sign Up
+              {isSubmitting ? "Creating account..." : "Sign Up"}
             </button>
           </form>
         </section>
