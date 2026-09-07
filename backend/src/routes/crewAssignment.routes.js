@@ -38,7 +38,10 @@ const notesRule = (value) => {
 };
 
 const createAssignmentRules = {
-	schedule: objectIdRule("Schedule"),
+	schedule: (value, body) =>
+		body.duty === undefined && !value ? "Schedule or duty is required" : value ? objectIdRule("Schedule")(value) : true,
+	duty: (value, body) =>
+		body.schedule === undefined && !value ? "Schedule or duty is required" : value ? objectIdRule("Duty")(value) : true,
 	crewMember: objectIdRule("Crew member"),
 	role: roleRule,
 	notes: (value, body) =>

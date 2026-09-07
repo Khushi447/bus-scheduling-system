@@ -1,4 +1,5 @@
 import { CrewAssignment } from "../models/crewAssignment.model.js";
+import { Duty } from "../models/duty.model.js";
 import { Schedule } from "../models/schedule.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -13,23 +14,32 @@ const populateAssignment = (query) => {
 				select: "name code origin destination",
 			},
 		})
+		.populate("duty")
 		.populate("crewMember", "name email phone role depot")
 		.populate("assignedBy", "name email role");
 };
 
 const assignCrewMember = asyncHandler(async (req, res) => {
-	const { schedule, crewMember, role, notes } = req.body;
-	const [scheduleDocument, crewMemberDocument] = await Promise.all([
-		Schedule.findById(schedule),
+	const { schedule, duty, crewMember, role, notes } = req.body;
+	if (!schedule && !duty) {
+		throw new ApiError(400, "Schedule or duty is required");
+	}
+	const [scheduleDocument, dutyDocument, crewMemberDocument] = await Promise.all([
+		schedule ? Schedule.findById(schedule) : null,
+		duty ? Duty.findById(duty) : null,
 		User.findById(crewMember),
 	]);
 
-	if (!scheduleDocument) {
+	if (schedule && !scheduleDocument) {
 		throw new ApiError(404, "Schedule not found");
 	}
+	if (duty && !dutyDocument) throw new ApiError(404, "Duty not found");
 
-	if (scheduleDocument.status === "Cancelled") {
+	if (scheduleDocument?.status === "Cancelled") {
 		throw new ApiError(400, "Cannot assign crew to a cancelled schedule");
+	}
+	if (dutyDocument && !["Approved", "Assigned"].includes(dutyDocument.status)) {
+		throw new ApiError(400, "Approve the duty before assigning crew");
 	}
 
 	if (!crewMemberDocument) {
@@ -42,11 +52,18 @@ const assignCrewMember = asyncHandler(async (req, res) => {
 
 	const assignment = await CrewAssignment.create({
 		schedule,
+		duty,
 		crewMember,
 		role,
 		notes,
 		assignedBy: req.user._id,
 	});
+
+	if (dutyDocument) {
+		dutyDocument.assignedCrew = crewMember;
+		dutyDocument.status = "Assigned";
+		await dutyDocument.save();
+	}
 
 	const createdAssignment = await populateAssignment(
 		CrewAssignment.findById(assignment._id),

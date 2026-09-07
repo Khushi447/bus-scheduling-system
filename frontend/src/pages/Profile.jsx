@@ -2,14 +2,20 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { apiFetch } from "../api";
 import { useEffect, useState } from "react";
+import { useLanguage } from "../i18n";
 
 function Profile() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
+  const [assignedDuties, setAssignedDuties] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiFetch("/users/me")
-      .then((response) => setUser(response.data))
+    Promise.all([apiFetch("/users/me"), apiFetch("/duties?assignedTo=me")])
+      .then(([userResponse, dutiesResponse]) => {
+        setUser(userResponse.data);
+        setAssignedDuties(dutiesResponse.data);
+      })
       .catch((requestError) => setError(requestError.message));
   }, []);
 
@@ -23,7 +29,7 @@ function Profile() {
           className="mb-10 w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-[0_10px_25px_rgba(0,0,0,0.08)]"
         >
           <img
-            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+            src={user?.profileImage || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"}
             alt="User"
             className="mx-auto mb-4 h-24 w-24 rounded-full object-cover"
           />
@@ -38,7 +44,7 @@ function Profile() {
         >
           <details open className="mb-4 overflow-hidden rounded-xl bg-white p-4 shadow-[0_5px_12px_rgba(0,0,0,0.05)]">
             <summary className="cursor-pointer list-none text-base font-bold text-[#004a70]">
-              Personal Information
+              {t("personalInformation")}
             </summary>
             <div className="mt-4 space-y-2 text-[#1f2937]">
               <p>
@@ -55,9 +61,19 @@ function Profile() {
 
           <details className="mb-4 overflow-hidden rounded-xl bg-white p-4 shadow-[0_5px_12px_rgba(0,0,0,0.05)]">
             <summary className="cursor-pointer list-none text-base font-bold text-[#004a70]">
-              Recent Schedules
+              {t("recentSchedules")}
             </summary>
-            <p className="mt-4 text-[#1f2937]">Schedules will appear here when assigned.</p>
+            <div className="mt-4 space-y-3 text-[#1f2937]">
+              {assignedDuties.map((duty) => (
+                <div key={duty._id} className="rounded-lg border border-slate-200 p-3 text-sm">
+                  <p className="font-semibold">Duty {duty.dutyId}</p>
+                  <p>{new Date(duty.serviceDate).toLocaleDateString()} | {duty.shift} | {duty.startTime} - {duty.endTime}</p>
+                  <p>{duty.depot} | {duty.vehicle}</p>
+                  <p className="font-semibold text-emerald-700">Status: {duty.status}</p>
+                </div>
+              ))}
+              {!assignedDuties.length && <p>{t("noAssignedDuties")}</p>}
+            </div>
           </details>
 
           <details className="overflow-hidden rounded-xl bg-white p-4 shadow-[0_5px_12px_rgba(0,0,0,0.05)]">

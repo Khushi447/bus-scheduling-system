@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import { apiFetch } from "../api";
+import { setLanguage, useLanguage } from "../i18n";
 
 const inputClassName =
   "mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition duration-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
@@ -12,9 +13,14 @@ const tabButtonClass =
   "rounded-xl border px-4 py-2.5 text-sm font-semibold transition duration-200 focus:outline-none focus:ring-2 focus:ring-sky-200";
 
 function Settings() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("profile");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [profile, setProfile] = useState({ name: "", phone: "", depot: "" });
+  const [profile, setProfile] = useState({ name: "", phone: "", depot: "", profileImage: "" });
+  const [preferences, setPreferences] = useState({ theme: "light", language: "en", emailAlerts: true, smsAlerts: true });
+  const [passwords, setPasswords] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -30,16 +36,47 @@ function Settings() {
           phone: user.phone || "",
           depot: user.depot || "",
           email: user.email || "",
+          profileImage: user.profileImage || "",
         });
+        const savedPreferences = user.preferences || { theme: "light", language: "en", emailAlerts: true, smsAlerts: true };
+        setPreferences(savedPreferences);
+        setLanguage(savedPreferences.language);
       })
       .catch((requestError) => setError(requestError.message));
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", preferences.theme === "dark");
+  }, [preferences.theme]);
 
   const handleProfileChange = (event) => {
     setProfile((currentProfile) => ({
       ...currentProfile,
       [event.target.name]: event.target.value,
     }));
+  };
+
+  const handleImageUpload = async () => {
+    if (!selectedImage) return;
+    setError("");
+    setMessage("");
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("profileImage", selectedImage);
+      const response = await apiFetch("/users/profile/image", {
+        method: "POST",
+        body: formData,
+      });
+      setProfile((currentProfile) => ({ ...currentProfile, ...response.data }));
+      setSelectedImage(null);
+      setMessage("Profile picture uploaded successfully.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleProfileSubmit = async (event) => {
@@ -63,6 +100,55 @@ function Settings() {
       setError(requestError.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePreferencesChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setPreferences((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+    if (name === "language") setLanguage(value);
+  };
+
+  const handlePreferencesSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch("/users/preferences", {
+        method: "PATCH",
+        body: JSON.stringify(preferences),
+      });
+      setPreferences(response.data.preferences);
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+      localStorage.setItem("user", JSON.stringify({ ...storedUser, preferences: response.data.preferences }));
+      setMessage("Preferences updated successfully.");
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  };
+
+  const handlePasswordChange = (event) => {
+    setPasswords((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
+
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+
+    try {
+      await apiFetch("/users/password", {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword: passwords.currentPassword, newPassword: passwords.newPassword }),
+      });
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setMessage("Password changed successfully.");
+    } catch (requestError) {
+      setError(requestError.message);
     }
   };
 
@@ -177,21 +263,27 @@ function Settings() {
               {activeTab === "profile" && (
                 <div data-aos="fade-up">
                   <h2 className="mb-5 text-2xl font-bold text-slate-800">
-                    Profile Settings
+                        {t("profileSettings")}
                   </h2>
                   <form className="space-y-4" onSubmit={handleProfileSubmit}>
                     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
                     {message && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
+                    {profile.profileImage && <img src={profile.profileImage} alt="Profile" className="h-24 w-24 rounded-full object-cover" />}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700">Profile Picture</label>
+                      <input className="mt-2 block w-full text-sm" type="file" accept="image/*" onChange={(event) => setSelectedImage(event.target.files?.[0] || null)} />
+                      <button type="button" onClick={handleImageUpload} disabled={!selectedImage || isUploading} className="mt-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isUploading ? "Uploading..." : "Upload Picture"}</button>
+                    </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Full Name
+                        {t("fullName")}
                       </label>
                       <input className={inputClassName} type="text" name="name" value={profile.name} onChange={handleProfileChange} required />
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Email
+                        {t("email")}
                       </label>
                       <input
                         className={inputClassName}
@@ -203,7 +295,7 @@ function Settings() {
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Phone
+                        {t("phone")}
                       </label>
                       <input
                         className={inputClassName}
@@ -217,7 +309,7 @@ function Settings() {
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Depot
+                        {t("depot")}
                       </label>
                       <input className={inputClassName} type="text" name="depot" value={profile.depot} onChange={handleProfileChange} placeholder="Depot name or ID" />
                     </div>
@@ -226,7 +318,7 @@ function Settings() {
                       type="submit"
                       className="mt-2 inline-flex rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
                     >
-                      {isSaving ? "Saving..." : "Save Changes"}
+                      {isSaving ? t("loading") : t("saveChanges")}
                     </button>
                   </form>
                 </div>
@@ -235,26 +327,28 @@ function Settings() {
               {activeTab === "preferences" && (
                 <div data-aos="fade-up">
                   <h2 className="mb-5 text-2xl font-bold text-slate-800">
-                    Preferences
+                    {t("preferences")}
                   </h2>
-                  <form className="space-y-4">
+                  <form className="space-y-4" onSubmit={handlePreferencesSubmit}>
+                    {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+                    {message && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Theme
+                        {t("theme")}
                       </label>
-                      <select className={`${inputClassName} appearance-none`}>
-                        <option>Light (Default)</option>
-                        <option>Dark</option>
+                      <select className={`${inputClassName} appearance-none`} name="theme" value={preferences.theme} onChange={handlePreferencesChange}>
+                        <option value="light">Light (Default)</option>
+                        <option value="dark">Dark</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Language
+                        {t("language")}
                       </label>
-                      <select className={`${inputClassName} appearance-none`}>
-                        <option>English</option>
-                        <option>Hindi</option>
+                      <select className={`${inputClassName} appearance-none`} name="language" value={preferences.language} onChange={handlePreferencesChange}>
+                        <option value="en">{t("english")}</option>
+                        <option value="hi">{t("hindi")}</option>
                       </select>
                     </div>
 
@@ -264,13 +358,13 @@ function Settings() {
                       </label>
 
                       <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
-                        Email Alerts
+                        <input type="checkbox" name="emailAlerts" checked={preferences.emailAlerts} onChange={handlePreferencesChange} className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        {t("emailAlerts")}
                       </label>
 
                       <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
-                        SMS Alerts
+                        <input type="checkbox" name="smsAlerts" checked={preferences.smsAlerts} onChange={handlePreferencesChange} className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        {t("smsAlerts")}
                       </label>
                     </div>
 
@@ -278,7 +372,7 @@ function Settings() {
                       type="submit"
                       className="mt-2 inline-flex rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
                     >
-                      Update Preferences
+                      {t("updatePreferences")}
                     </button>
                   </form>
                 </div>
@@ -287,35 +381,37 @@ function Settings() {
               {activeTab === "security" && (
                 <div data-aos="fade-up">
                   <h2 className="mb-5 text-2xl font-bold text-slate-800">
-                    Security Settings
+                    {t("security")}
                   </h2>
-                  <form className="space-y-4">
+                  <form className="space-y-4" onSubmit={handlePasswordSubmit}>
+                    {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+                    {message && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Current Password
+                        {t("currentPassword")}
                       </label>
-                      <input className={inputClassName} type="password" />
+                      <input className={inputClassName} type="password" name="currentPassword" value={passwords.currentPassword} onChange={handlePasswordChange} required />
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        New Password
+                        {t("newPassword")}
                       </label>
-                      <input className={inputClassName} type="password" />
+                      <input className={inputClassName} type="password" name="newPassword" value={passwords.newPassword} onChange={handlePasswordChange} minLength={8} required />
                     </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-slate-700">
-                        Confirm New Password
+                        {t("confirmNewPassword")}
                       </label>
-                      <input className={inputClassName} type="password" />
+                      <input className={inputClassName} type="password" name="confirmPassword" value={passwords.confirmPassword} onChange={handlePasswordChange} minLength={8} required />
                     </div>
 
                     <button
                       type="submit"
                       className="mt-2 inline-flex rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-200 transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
                     >
-                      Change Password
+                      {t("changePassword")}
                     </button>
                   </form>
                 </div>

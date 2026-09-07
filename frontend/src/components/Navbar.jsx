@@ -1,9 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch, clearAuthSession } from "../api";
+import { useLanguage } from "../i18n";
 
 function Navbar() {
+  const { t } = useLanguage();
   const profileRef = useRef(null);
 
+  const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+  const isAdmin = storedUser?.role === "Admin";
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -18,6 +23,18 @@ function Navbar() {
       window.cancelAnimationFrame(frame);
     };
   }, []);
+
+  const handleLogout = async (event) => {
+    event.preventDefault();
+
+    try {
+      await apiFetch("/users/logout", { method: "POST" });
+    } finally {
+      clearAuthSession();
+      setShowDropdown(false);
+      window.location.href = "/Login";
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,7 +115,7 @@ function Navbar() {
                 className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Home
+                {t("home")}
               </Link>
             </li>
 
@@ -108,7 +125,7 @@ function Navbar() {
                 className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Contacts
+                {t("contacts")}
               </Link>
             </li>
 
@@ -118,7 +135,17 @@ function Navbar() {
                 className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Settings
+                {t("settings")}
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/RouteManagement"
+                className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Routes
               </Link>
             </li>
 
@@ -128,7 +155,7 @@ function Navbar() {
                 className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
                 onClick={() => setShowMobileMenu(false)}
               >
-                SignUp
+                {t("signup")}
               </Link>
             </li>
 
@@ -138,9 +165,21 @@ function Navbar() {
                 className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Login
+                {t("login")}
               </Link>
             </li>
+
+            {isAdmin && (
+              <li>
+                <Link
+                  to="/Admin"
+                  className="block rounded-md px-2.5 py-2 text-base font-semibold text-white no-underline transition-colors duration-200 hover:bg-[rgba(3,169,244,0.15)] hover:text-[#03a9f4] focus:bg-[rgba(3,169,244,0.15)] focus:text-[#03a9f4] md:py-1.5"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  {t("admin")}
+                </Link>
+              </li>
+            )}
 
             <li className="relative flex items-center" ref={profileRef}>
               <button
@@ -159,10 +198,11 @@ function Navbar() {
                     to="/Profile"
                     className="block px-[15px] py-[10px] text-sm text-[#004d80] no-underline hover:bg-[#e6f5ff]"
                   >
-                    View Profile
+                    {t("profile")}
                   </Link>
                   <a
-                    href="#"
+                    href="/Login"
+                    onClick={handleLogout}
                     className="block px-[15px] py-[10px] text-sm text-[#004d80] no-underline hover:bg-[#e6f5ff]"
                   >
                     Logout

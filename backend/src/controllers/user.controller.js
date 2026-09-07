@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadImage } from "../utils/cloudinary.js";
 
 const accessTokenCookieName = "accessToken";
 
@@ -34,10 +35,7 @@ const sanitizeUser = (user) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-	const { name, email, phone, password, role, depot } = req.body;
-	const normalizedRole = role
-		? role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
-		: role;
+	const { name, email, phone, password, depot } = req.body;
 
 	const existingUser = await User.findOne({ email: email?.toLowerCase() });
 
@@ -50,7 +48,7 @@ const registerUser = asyncHandler(async (req, res) => {
 		email,
 		phone,
 		password,
-		role: normalizedRole,
+		role: "Driver",
 		depot,
 	});
 
@@ -113,6 +111,71 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 	});
 });
 
+const getCrewMembers = asyncHandler(async (req, res) => {
+	const filter = { role: { $in: ["Driver", "Conductor"] } };
+
+	if (req.query.role && ["Driver", "Conductor"].includes(req.query.role)) {
+		filter.role = req.query.role;
+	}
+
+	const users = await User.find(filter)
+		.select("name email phone role depot")
+		.sort({ name: 1 });
+
+	res.status(200).json({
+		success: true,
+		message: "Crew members fetched successfully",
+		data: users,
+	});
+});
+
+const uploadProfileImage = asyncHandler(async (req, res) => {
+	if (!req.file) throw new ApiError(400, "Profile image is required");
+
+	let result;
+	try {
+		result = await uploadImage(req.file.buffer);
+	} catch (error) {
+		console.error("Cloudinary upload failed:", error);
+		throw new ApiError(502, `Cloudinary upload failed: ${error.message}`);
+	}
+	const user = await User.findByIdAndUpdate(
+		req.user._id,
+		{ profileImage: result.secure_url },
+		{ new: true, runValidators: true },
+	);
+
+	res.status(200).json({
+		success: true,
+		message: "Profile image uploaded successfully",
+		data: sanitizeUser(user),
+	});
+});
+
+const getUsersForAdmin = asyncHandler(async (req, res) => {
+	const users = await User.find().select("name email phone role depot profileImage createdAt").sort({ name: 1 });
+	res.status(200).json({ success: true, message: "Users fetched successfully", data: users });
+});
+
+const updateUserRole = asyncHandler(async (req, res) => {
+	const { role } = req.body;
+	if (!["Driver", "Conductor", "Scheduler", "Admin"].includes(role)) {
+		throw new ApiError(400, "Invalid user role");
+	}
+	if (req.params.id === req.user._id.toString() && role !== "Admin") {
+		throw new ApiError(400, "You cannot remove your own Admin role");
+	}
+
+	const user = await User.findByIdAndUpdate(
+		req.params.id,
+		{ role },
+		{ new: true, runValidators: true },
+	);
+	if (!user) throw new ApiError(404, "User not found");
+
+	res.status(200).json({ success: true, message: "User role updated successfully", data: sanitizeUser(user) });
+});
+
 const updateProfile = asyncHandler(async (req, res) => {
 	const { name, phone, depot } = req.body;
 	const user = await User.findById(req.user._id);
@@ -134,10 +197,51 @@ const updateProfile = asyncHandler(async (req, res) => {
 	});
 });
 
+const updatePreferences = asyncHandler(async (req, res) => {
+	const { theme, language, emailAlerts, smsAlerts } = req.body;
+	const user = await User.findById(req.user._id);
+
+	if (!user) throw new ApiError(404, "User not found");
+	if (theme !== undefined && !["light", "dark"].includes(theme)) {
+		throw new ApiError(400, "Invalid theme");
+	}
+	if (language !== undefined && !["en", "hi"].includes(language)) {
+		throw new ApiError(400, "Invalid language");
+	}
+	if (theme !== undefined) user.preferences.theme = theme;
+	if (language !== undefined) user.preferences.language = language;
+	if (emailAlerts !== undefined) user.preferences.emailAlerts = Boolean(emailAlerts);
+	if (smsAlerts !== undefined) user.preferences.smsAlerts = Boolean(smsAlerts);
+
+	await user.save();
+	res.status(200).json({ success: true, message: "Preferences updated successfully", data: sanitizeUser(user) });
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+	const { currentPassword, newPassword } = req.body;
+	if (!currentPassword || !newPassword) throw new ApiError(400, "Current and new passwords are required");
+	if (newPassword.length < 8) throw new ApiError(400, "New password must be at least 8 characters");
+
+	const user = await User.findById(req.user._id).select("+password");
+	if (!(await user.isPasswordCorrect(currentPassword))) {
+		throw new ApiError(401, "Current password is incorrect");
+	}
+	user.password = newPassword;
+	await user.save();
+
+	res.status(200).json({ success: true, message: "Password changed successfully", data: null });
+});
+
 export {
 	registerUser,
 	loginUser,
 	logoutUser,
 	getCurrentUser,
+	getCrewMembers,
+	uploadProfileImage,
+	getUsersForAdmin,
+	updateUserRole,
 	updateProfile,
+	updatePreferences,
+	changePassword,
 };

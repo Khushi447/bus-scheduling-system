@@ -3,9 +3,14 @@ import Footer from "../components/Footer";
 import { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { apiFetch } from "../api";
 
 function Contacts() {
   const [openIndex, setOpenIndex] = useState(null);
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
@@ -13,6 +18,27 @@ function Contacts() {
 
   const toggleAccordion = (index) => {
     setOpenIndex((current) => (current === index ? null : index));
+  };
+
+  const handleChange = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setStatus("");
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await apiFetch("/contacts", { method: "POST", body: JSON.stringify(formData) });
+      setFormData({ name: "", email: "", message: "" });
+      setStatus("Your message was sent successfully.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const faqs = [
@@ -51,22 +77,33 @@ function Contacts() {
           <div className="min-w-[300px] flex-1 rounded-2xl bg-white/80 p-6 shadow-[0_8px_20px_rgba(0,0,0,0.06)]" data-aos="fade-up">
             <h2 className="mb-5 text-2xl font-bold text-[#004d80]">📩 Send Us a Message</h2>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+              {status && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{status}</p>}
               <input
                 type="text"
+                name="name"
                 placeholder="Your Name"
+                value={formData.name}
+                onChange={handleChange}
                 required
                 className="w-full rounded-lg border border-[#cbd5e1] bg-white px-4 py-3 text-base text-[#0f172a] outline-none transition focus:border-[#38bdf8] focus:ring-2 focus:ring-[#bae6fd]"
               />
               <input
                 type="email"
+                name="email"
                 placeholder="Your Email"
+                value={formData.email}
+                onChange={handleChange}
                 required
                 className="w-full rounded-lg border border-[#cbd5e1] bg-white px-4 py-3 text-base text-[#0f172a] outline-none transition focus:border-[#38bdf8] focus:ring-2 focus:ring-[#bae6fd]"
               />
               <textarea
                 rows="5"
+                name="message"
                 placeholder="Your Message"
+                value={formData.message}
+                onChange={handleChange}
                 required
                 className="w-full rounded-lg border border-[#cbd5e1] bg-white px-4 py-3 text-base text-[#0f172a] outline-none transition focus:border-[#38bdf8] focus:ring-2 focus:ring-[#bae6fd]"
               />
@@ -74,7 +111,7 @@ function Contacts() {
                 type="submit"
                 className="rounded-lg bg-[#0099cc] px-6 py-3 font-semibold text-white transition hover:bg-[#0284c7]"
               >
-                Submit
+                {isSubmitting ? "Sending..." : "Submit"}
               </button>
             </form>
           </div>

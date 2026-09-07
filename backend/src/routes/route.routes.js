@@ -32,7 +32,9 @@ const stopsRule = (value) => {
 				typeof stop?.name === "string" &&
 				stop.name.trim().length > 0 &&
 				Number.isInteger(stop.sequence) &&
-				stop.sequence > 0,
+				stop.sequence > 0 &&
+				(stop.latitude === undefined || (typeof stop.latitude === "number" && stop.latitude >= -90 && stop.latitude <= 90)) &&
+				(stop.longitude === undefined || (typeof stop.longitude === "number" && stop.longitude >= -180 && stop.longitude <= 180)),
 		)
 		? true
 		: "Stops must contain names and positive integer sequences";

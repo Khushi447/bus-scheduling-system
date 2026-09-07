@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
 		},
 		role: {
 			type: String,
-			enum: ["Driver", "Conductor", "Scheduler"],
+			enum: ["Driver", "Conductor", "Scheduler", "Admin"],
 			default: "Driver",
 			required: true,
 		},
@@ -39,6 +39,25 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			trim: true,
 			default: "",
+		},
+		profileImage: {
+			type: String,
+			default: "",
+			trim: true,
+		},
+		preferences: {
+			theme: {
+				type: String,
+				enum: ["light", "dark"],
+				default: "light",
+			},
+			language: {
+				type: String,
+				enum: ["en", "hi"],
+				default: "en",
+			},
+			emailAlerts: { type: Boolean, default: true },
+			smsAlerts: { type: Boolean, default: true },
 		},
 	},
 	{

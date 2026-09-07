@@ -36,7 +36,10 @@ export const apiFetch = async (path, options = {}) => {
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(payload.message || "Request failed");
+    const validationMessage = payload.errors
+      ?.map((error) => `${error.field}: ${error.message}`)
+      .join("; ");
+    throw new Error(validationMessage || payload.message || "Request failed");
   }
 
   return payload;

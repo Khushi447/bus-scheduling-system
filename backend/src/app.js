@@ -5,6 +5,8 @@ import crewAssignmentRouter from "./routes/crewAssignment.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import routeRouter from "./routes/route.routes.js";
 import scheduleRouter from "./routes/schedule.routes.js";
+import dutyRouter from "./routes/duty.routes.js";
+import contactRouter from "./routes/contact.routes.js";
 
 const app = express();
 
@@ -25,7 +27,9 @@ import userRouter from "./routes/user.routes.js";
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/routes", routeRouter);
 app.use("/api/v1/schedules", scheduleRouter);
+app.use("/api/v1/duties", dutyRouter);
 app.use("/api/v1/assignments", crewAssignmentRouter);
+app.use("/api/v1/contacts", contactRouter);
 
 app.use(errorHandler);
 

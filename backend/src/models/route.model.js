@@ -12,6 +12,8 @@ const stopSchema = new mongoose.Schema(
 			required: true,
 			min: 1,
 		},
+		latitude: { type: Number, min: -90, max: 90 },
+		longitude: { type: Number, min: -180, max: 180 },
 	},
 	{ _id: false },
 );

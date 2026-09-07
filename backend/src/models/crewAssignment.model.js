@@ -5,7 +5,12 @@ const crewAssignmentSchema = new mongoose.Schema(
 		schedule: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Schedule",
-			required: true,
+			default: null,
+		},
+		duty: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Duty",
+			default: null,
 		},
 		crewMember: {
 			type: mongoose.Schema.Types.ObjectId,
@@ -41,7 +46,12 @@ const crewAssignmentSchema = new mongoose.Schema(
 
 crewAssignmentSchema.index(
 	{ schedule: 1, crewMember: 1, role: 1 },
-	{ unique: true },
+	{ unique: true, sparse: true },
+);
+
+crewAssignmentSchema.index(
+	{ duty: 1, crewMember: 1, role: 1 },
+	{ unique: true, sparse: true },
 );
 
 export const CrewAssignment = mongoose.model(

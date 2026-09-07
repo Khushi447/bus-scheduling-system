@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import RouteManagement from "./pages/RouteManagement";
 import Profile from "./pages/Profile";
 import Contacts from "./pages/Contacts";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/RouteManagement" element={<RouteManagement />} />
         <Route path="/Profile" element={<Profile />} />
         <Route path="/Contacts" element={<Contacts />} />
+        <Route path="/Admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   );

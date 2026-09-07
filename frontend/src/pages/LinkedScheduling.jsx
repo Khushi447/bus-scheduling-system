@@ -1,159 +1,102 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { apiFetch } from "../api";
+
+const inputClassName = "mt-2 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2.5 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
+const emptySchedule = { route: "", serviceDate: "", shift: "Morning", startTime: "", endTime: "", busNumber: "" };
+const emptyAssignment = { schedule: "", crewMember: "", role: "Driver" };
 
 function LinkedScheduling() {
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [routes, setRoutes] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [crewMembers, setCrewMembers] = useState([]);
+  const [scheduleForm, setScheduleForm] = useState(emptySchedule);
+  const [assignmentForm, setAssignmentForm] = useState(emptyAssignment);
+  const [isScheduler, setIsScheduler] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [feedbackColor, setFeedbackColor] = useState("green");
+  const [error, setError] = useState("");
 
-  function checkOverlap(start1, end1, start2, end2) {
-    const toMinutes = (timeStr) => {
-      const [h, m] = timeStr.split(":").map(Number);
-      return h * 60 + m;
-    };
+  const loadData = async () => {
+    const [routeResponse, scheduleResponse] = await Promise.all([apiFetch("/routes"), apiFetch("/schedules")]);
+    setRoutes(routeResponse.data);
+    setSchedules(scheduleResponse.data);
+  };
 
-    const s1 = toMinutes(start1);
-    const e1 = toMinutes(end1);
-    const s2 = toMinutes(start2);
-    const e2 = toMinutes(end2);
+  useEffect(() => {
+    Promise.all([apiFetch("/users/me"), apiFetch("/routes"), apiFetch("/schedules")])
+      .then(async ([userResponse, routeResponse, scheduleResponse]) => {
+        const scheduler = userResponse.data.role === "Scheduler";
+        setIsScheduler(scheduler);
+        setRoutes(routeResponse.data);
+        setSchedules(scheduleResponse.data);
+        if (scheduler) setCrewMembers((await apiFetch("/users/crew")).data);
+      })
+      .catch((requestError) => setError(requestError.message));
+  }, []);
 
-    return s1 < e2 && e1 > s2;
-  }
+  const updateForm = (setter) => (event) => setter((current) => ({ ...current, [event.target.name]: event.target.value }));
 
-  const handleSubmit = (event) => {
+  const createSchedule = async (event) => {
     event.preventDefault();
+    setError("");
+    setFeedback("");
+    try {
+      await apiFetch("/schedules", { method: "POST", body: JSON.stringify(scheduleForm) });
+      setScheduleForm(emptySchedule);
+      await loadData();
+      setFeedback("Schedule created successfully.");
+    } catch (requestError) { setError(requestError.message); }
+  };
 
-    const overlapExists = checkOverlap(startTime, endTime, "09:00", "13:00");
-
-    if (overlapExists) {
-      setFeedbackColor("red");
-      setFeedback("❗ Overlapping shift detected. Please adjust timing or change Bus ID.");
-    } else {
-      setFeedbackColor("green");
-      setFeedback("✅ Duty assigned successfully!");
-    }
+  const assignCrew = async (event) => {
+    event.preventDefault();
+    setError("");
+    setFeedback("");
+    try {
+      await apiFetch("/assignments", { method: "POST", body: JSON.stringify(assignmentForm) });
+      setAssignmentForm(emptyAssignment);
+      setFeedback("Crew member assigned successfully.");
+    } catch (requestError) { setError(requestError.message); }
   };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(135deg,#edf8ff,#f4fbff,#e6f7ff)]">
       <Navbar />
+      <main className="mx-auto max-w-6xl px-4 pb-12 pt-28">
+        <h1 className="mb-2 text-center text-3xl font-bold text-slate-900">Linked Scheduling</h1>
+        <p className="mb-8 text-center text-slate-600">Manage schedules and assign crew using backend records.</p>
+        {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {feedback && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{feedback}</p>}
 
-      <main className="mx-auto max-w-[600px] px-4 pb-12 pt-28">
-        <section className="mb-8 rounded-xl border-l-[5px] border-[#0077cc] bg-[#eaf6ff] p-5">
-          <h2 className="mb-2 text-lg font-bold text-[#0f172a]">
-            Benefits of Linked Duty Scheduling
-          </h2>
-          <ul className="space-y-1 text-[#1f2937]">
-            <li>✅ Better accountability</li>
-            <li>✅ Reduced scheduling conflicts</li>
-          </ul>
-        </section>
+        {isScheduler && <section className="grid gap-6 lg:grid-cols-2">
+          <form onSubmit={createSchedule} className="rounded-xl bg-white p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold text-slate-800">Create Schedule</h2>
+            <label className="block text-sm font-medium">Route
+              <select className={inputClassName} name="route" value={scheduleForm.route} onChange={updateForm(setScheduleForm)} required><option value="">Select a route</option>{routes.map((route) => <option key={route._id} value={route._id}>{route.code} - {route.name}</option>)}</select>
+            </label>
+            <label className="mt-4 block text-sm font-medium">Service date<input className={inputClassName} type="date" name="serviceDate" value={scheduleForm.serviceDate} onChange={updateForm(setScheduleForm)} required /></label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="mt-4 block text-sm font-medium">Shift<select className={inputClassName} name="shift" value={scheduleForm.shift} onChange={updateForm(setScheduleForm)}>{["Morning", "Afternoon", "Evening", "Night"].map((shift) => <option key={shift}>{shift}</option>)}</select></label>
+              <label className="mt-4 block text-sm font-medium">Bus number<input className={inputClassName} name="busNumber" value={scheduleForm.busNumber} onChange={updateForm(setScheduleForm)} /></label>
+              <label className="block text-sm font-medium">Start time<input className={inputClassName} type="time" name="startTime" value={scheduleForm.startTime} onChange={updateForm(setScheduleForm)} required /></label>
+              <label className="block text-sm font-medium">End time<input className={inputClassName} type="time" name="endTime" value={scheduleForm.endTime} onChange={updateForm(setScheduleForm)} required /></label>
+            </div>
+            <button className="mt-5 w-full rounded-lg bg-sky-600 px-4 py-3 font-semibold text-white">Create Schedule</button>
+          </form>
 
-        <h1 className="mb-6 text-center text-3xl font-bold text-[#0f172a]">
-          Linked Duty Scheduling
-        </h1>
+          <form onSubmit={assignCrew} className="rounded-xl bg-white p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold text-slate-800">Assign Crew</h2>
+            <label className="block text-sm font-medium">Schedule<select className={inputClassName} name="schedule" value={assignmentForm.schedule} onChange={updateForm(setAssignmentForm)} required><option value="">Select a schedule</option>{schedules.map((schedule) => <option key={schedule._id} value={schedule._id}>{schedule.route?.code || "Route"} - {new Date(schedule.serviceDate).toLocaleDateString()}</option>)}</select></label>
+            <label className="mt-4 block text-sm font-medium">Role<select className={inputClassName} name="role" value={assignmentForm.role} onChange={updateForm(setAssignmentForm)}><option>Driver</option><option>Conductor</option></select></label>
+            <label className="mt-4 block text-sm font-medium">Crew member<select className={inputClassName} name="crewMember" value={assignmentForm.crewMember} onChange={updateForm(setAssignmentForm)} required><option value="">Select a crew member</option>{crewMembers.filter((member) => member.role === assignmentForm.role).map((member) => <option key={member._id} value={member._id}>{member.name} ({member.role})</option>)}</select></label>
+            <button className="mt-5 w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white">Assign Crew</button>
+          </form>
+        </section>}
 
-        <form onSubmit={handleSubmit} className="rounded-xl bg-white p-6 shadow-[0_0_18px_rgba(0,0,0,0.05)]">
-          <label htmlFor="busId" className="mt-4 block font-medium text-[#1f2937] first:mt-0">
-            Bus ID:
-          </label>
-          <input
-            type="text"
-            id="busId"
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="driverId" className="mt-4 block font-medium text-[#1f2937]">
-            Driver ID:
-          </label>
-          <input
-            type="text"
-            id="driverId"
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="conductorId" className="mt-4 block font-medium text-[#1f2937]">
-            Conductor ID:
-          </label>
-          <input
-            type="text"
-            id="conductorId"
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="contact" className="mt-4 block font-medium text-[#1f2937]">
-            Contact Details:
-          </label>
-          <input
-            type="text"
-            id="contact"
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="shiftName" className="mt-4 block font-medium text-[#1f2937]">
-            Shift Name:
-          </label>
-          <input
-            type="text"
-            id="shiftName"
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="startTime" className="mt-4 block font-medium text-[#1f2937]">
-            Start Time:
-          </label>
-          <input
-            type="time"
-            id="startTime"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="endTime" className="mt-4 block font-medium text-[#1f2937]">
-            End Time:
-          </label>
-          <input
-            type="time"
-            id="endTime"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <label htmlFor="breakTime" className="mt-4 block font-medium text-[#1f2937]">
-            Break Times:
-          </label>
-          <input
-            type="text"
-            id="breakTime"
-            placeholder="e.g., 1:00 PM - 1:30 PM"
-            required
-            className="mt-2 w-full rounded-md border border-[#cbd5e1] bg-[#f9fcff] px-3 py-2.5 outline-none transition focus:border-[#0077cc] focus:ring-2 focus:ring-[#bfdbfe]"
-          />
-
-          <button
-            type="submit"
-            className="mt-6 w-full rounded-lg bg-[#0077cc] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#005fa3]"
-          >
-            Assign
-          </button>
-        </form>
-
-        <p className="mt-5 text-center font-bold" style={{ color: feedbackColor }}>
-          {feedback}
-        </p>
+        {!isScheduler && !error && <p className="rounded-lg bg-amber-50 p-4 text-center text-sm text-amber-800">Only Scheduler accounts can create schedules or assign crew.</p>}
+        <section className="mt-8 rounded-xl bg-white p-6 shadow"><h2 className="mb-4 text-xl font-bold text-slate-800">Schedules</h2><div className="space-y-3">{schedules.map((schedule) => <div key={schedule._id} className="rounded-lg border border-slate-200 p-4 text-sm"><p className="font-semibold">{schedule.route?.code || "Route"} - {schedule.route?.name || ""}</p><p>{new Date(schedule.serviceDate).toLocaleDateString()} | {schedule.shift} | {schedule.startTime} - {schedule.endTime}</p><p>Status: {schedule.status}</p></div>)}{!schedules.length && <p className="text-sm text-slate-600">No schedules found.</p>}</div></section>
       </main>
-
       <Footer />
     </div>
   );
